@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MealMaster - Verwalte deine Ernährung</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+
+<body>
+  <header>
+    <div class="hero">
+      <h1>MealMaster</h1>
+      <p>Dein persönlicher Assistent für gesunde und einfache Ernährung.</p>
+      <a href="#features" class="cta-button">Mehr erfahren</a>
+    </div>
+  </header>
+
+  <section id="features">
+    <h2>Funktionen von MealMaster</h2>
+    <div class="feature">
+      <h3>Rezepte erstellen und verwalten</h3>
+      <p>Speichere deine Lieblingsrezepte und verwalte sie bequem an einem Ort.</p>
+    </div>
+    <div class="feature">
+      <h3>Einkaufslisten generieren</h3>
+      <p>Wähle Rezepte aus und lass dir eine praktische Einkaufsliste erstellen.</p>
+    </div>
+    <div class="feature">
+      <h3>Lebensmittelbestände erfassen</h3>
+      <p>Behalte den Überblick über deine Vorräte und vermeide unnötige Einkäufe.</p>
+    </div>
+    <div class="feature">
+      <h3>Flexible Einkaufsliste</h3>
+      <p>Ergänze deine Einkaufsliste um Non-Food-Produkte und hab alles im Blick.</p>
+    </div>
+  </section>
+
+  <footer>
+    <p>&copy; 2024 MealMaster - Deine smarte Lösung für eine ausgewogene Ernährung</p>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+
+</html>
