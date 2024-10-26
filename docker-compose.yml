@@ -1,30 +1,11 @@
-version: '3.8'
 services:
   web:
-    build: .
-    container_name: mealmaster_web
-    command: flask run --host=0.0.0.0
+    build: ./server
+    working_dir: /usr/src/app/project
+    command: uwsgi --socket 0.0.0.0:5000 --enable-threads --protocol=http -w wsgi:app --logto /dev/stdout --workers 4 --threads 2
+    volumes:
+      - ./database/:/usr/src/app/project/instance
+      - ./logs:/usr/src/app/project/logs
+      #     - ./config:/usr/src/app/project/config
     ports:
-      - "5000:5000"  # Flask-Port 5000
-    volumes:
-      - .:/app  
-    environment:
-      - FLASK_ENV=development
-      - FLASK_APP=app
-      - DATABASE_URL=postgresql://mealmaster_user:password@db/mealmaster_db
-    depends_on:
-      - db  # Wait for DB
-
-  db:
-    image: postgres:13  
-    container_name: mealmaster_db
-    environment:
-      POSTGRES_USER: mealmaster_user # Use enviorment Variables !!!!
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: mealmaster_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data  
-
-volumes:
-  postgres_data:
-
+      - 5000:5000
