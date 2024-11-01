@@ -8,6 +8,12 @@ def home():
     return render_template("index.html")
 
 
+@app.route('/create-recipe')
+def create_recipe():
+    # Seite zum Erstellen von Rezepten
+    return render_template('create_recipe.html')
+
+
 @app.route('/favicon.ico')
 def favicon():
     return '', 204

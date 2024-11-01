@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MealMaster - Neues Rezept erstellen</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+
+<body>
+  <header>
+    <h1>Neues Rezept erstellen</h1>
+  </header>
+
+  <main>
+    <section id="create-recipe" class="create-recipe-section">
+      <h2>Rezept hinzufügen</h2>
+      <form id="recipe-form">
+        <label for="title">Rezepttitel:</label>
+        <input type="text" id="title" name="title" required placeholder="Z.B. Spaghetti Bolognese">
+
+        <label for="ingredients">Zutaten (durch Kommas getrennt):</label>
+        <input type="text" id="ingredients" name="ingredients" required placeholder="Z.B. 200g Spaghetti, 100g Tomaten">
+
+        <label for="instructions">Zubereitungsschritte:</label>
+        <textarea id="instructions" name="instructions" rows="4" required
+          placeholder="Schritte zur Zubereitung"></textarea>
+
+        <button type="button" onclick="addRecipe()">Rezept hinzufügen</button>
+      </form>
+    </section>
+
+    <section id="recipe-list" class="recipe-list-section">
+      <h2>Gespeicherte Rezepte</h2>
+      <ul id="recipes">
+        <!-- Hier werden die Rezepte angezeigt -->
+      </ul>
+    </section>
+  </main>
+
+  <script>
+    const recipes = [];
+
+    function addRecipe() {
+      const title = document.getElementById("title").value;
+      const ingredients = document.getElementById("ingredients").value;
+      const instructions = document.getElementById("instructions").value;
+
+      if (title && ingredients && instructions) {
+        // Füge das neue Rezept der Liste hinzu
+        recipes.push({title, ingredients, instructions});
+
+        // Formular leeren
+        document.getElementById("recipe-form").reset();
+
+        // Rezeptliste aktualisieren
+        displayRecipes();
+      }
+    }
+
+    function displayRecipes() {
+      const recipeList = document.getElementById("recipes");
+      recipeList.innerHTML = ''; // Liste leeren
+
+      recipes.forEach((recipe, index) => {
+        const listItem = document.createElement("li");
+        listItem.innerHTML = `
+          <h3>${recipe.title}</h3>
+          <p><strong>Zutaten:</strong> ${recipe.ingredients}</p>
+          <p><strong>Zubereitung:</strong> ${recipe.instructions}</p>
+        `;
+        recipeList.appendChild(listItem);
+      });
+    }
+  </script>
+</body>
+
+</html>
