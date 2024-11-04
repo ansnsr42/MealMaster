@@ -4,13 +4,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MealMaster - Neues Rezept erstellen</title>
+  <title>MealMaster - Verwalte deine Ernährung</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 
 <body>
   <header>
-    <h1>Neues Rezept erstellen</h1>
+    <div class="hero">
+      <h1>MealMaster</h1>
+      <p>Dein persönlicher Assistent für gesunde und einfache Ernährung.</p>
+      <a href="#features" class="cta-button">Jetzt starten</a>
+    </div>
+    <div class="menu-icon" onclick="toggleMenu()">
+      &#9776; <!-- Hamburger Icon -->
+    </div>
+    <nav id="navbar" class="navbar">
+      <ul>
+        <li><a href="{{ url_for('create_recipe') }}">Rezepte erstellen und verwalten</a></li>
+        <li><a href="#shopping-list">Einkaufslisten generieren und anpassen</a></li>
+        <li><a href="#inventory">Lebensmittelbestand erfassen</a></li>
+      </ul>
+    </nav>
   </header>
 
   <main>
