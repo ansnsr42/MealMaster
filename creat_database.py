@@ -58,7 +58,7 @@ def create_users_db():
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
+            password_hash TEXT NOT NULL,
             register_date TEXT,
             last_login TEXT,
             ip_address TEXT
