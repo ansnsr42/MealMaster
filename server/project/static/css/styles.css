@@ -47,7 +47,7 @@ header {
 }
 
 .menu-icon {
-    display: none; /* Standardmäßig ausblenden */
+    display:block ; /* Standardmäßig ausblenden */
     font-size: 30px;
     cursor: pointer;
     color: white;
