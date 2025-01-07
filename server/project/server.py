@@ -48,7 +48,7 @@ class User(db.Model, UserMixin):
     last_login = db.Column(db.TEXT)
     ip_address = db.Column(db.TEXT)
     # Beziehung zurück auf Recipes
-    recipes = db.relationship('Recipe', backref='user', lazy=True)
+    recipes = db.relationship('Recipe', back_populates='user')
 
     def __repr__(self):
         return f"<User {self.username}>"
@@ -58,8 +58,10 @@ class Ingredient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
 
-    # Beziehung zurück auf Recipes (optional)
-    recipes = db.relationship('Recipe', backref='ingredient', lazy=True)
+    # Beziehung zu RecipeIngredient
+    ingredient_in_recipes = db.relationship('RecipeIngredient', back_populates='ingredient',
+                                            cascade="all, delete-orphan")
+
 
 
 class Recipe(db.Model):
@@ -67,18 +69,25 @@ class Recipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(30), nullable=False)
     instructions = db.Column(db.String(400))
-    quantity = db.Column(db.String(50))  # z.B. "2 EL", "500 ml", etc.
-
-    # Schlüssel auf ingredient
-    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredients.id'))
-
-    # Schlüssel auf User (wer hat das Rezept angelegt)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-    # Beziehungen:
-    # ingredient = relationship('Ingredient') -> bereits oben via backref='ingredient' erreichbar
-    # user = relationship('User') -> definieren wir bei User als backref
+    # Das "Brückentable" verknüpft Rezepte und Zutaten
+    recipe_ingredients = db.relationship('RecipeIngredient', back_populates='recipe',
+                                         cascade="all, delete-orphan")
+    user = db.relationship('User', back_populates='recipes')  # Nur falls du back_populates nutzt
 
+
+class RecipeIngredient(db.Model):
+    __tablename__ = 'recipe_ingredients'
+
+    id = db.Column(db.Integer, primary_key=True)
+    recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=False)
+    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredients.id'), nullable=False)
+    quantity = db.Column(db.String(50), nullable=True)  # z.B. "200 g"
+
+    # Beziehungen (ein RecipeIngredient gehört zu genau 1 Recipe und 1 Ingredient)
+    recipe = db.relationship('Recipe', back_populates='recipe_ingredients')
+    ingredient = db.relationship('Ingredient', back_populates='ingredient_in_recipes')
 
 
 
@@ -189,65 +198,101 @@ def create_recipe():
     if request.method == 'POST':
         title = request.form.get('title')
         instructions = request.form.get('instructions')
-        quantity = request.form.get('quantity')
-        ingredient_name = request.form.get('ingredient_name')
 
-        # 1) Prüfen, ob eine Zutat angegeben wurde
-        if ingredient_name:
-            # nachschauen, ob diese Zutat schon existiert
-            ingredient = Ingredient.query.filter_by(name=ingredient_name).first()
-            if not ingredient:
-                # Neue Zutat anlegen
-                ingredient = Ingredient(name=ingredient_name)
-                db.session.add(ingredient)
-                db.session.commit()
-            ingredient_id = ingredient.id
-        else:
-            ingredient_id = None
-
-        # 2) Rezept anlegen
+        # 1) Neues Rezept-Objekt
         new_recipe = Recipe(
             title=title,
             instructions=instructions,
-            quantity=quantity,
-            ingredient_id=ingredient_id,
-            user_id=current_user.id  # wichtig: so gehört das Rezept dem eingeloggten User
+            user_id=current_user.id
         )
         db.session.add(new_recipe)
-        db.session.commit()
+        db.session.commit()  # Damit new_recipe eine ID hat
 
-        flash("Rezept erfolgreich erstellt!", "success")
+        # 2) Zutaten auslesen
+        # z.B. ingredient_name[] => Liste an Strings
+        #     ingredient_qty[] => Liste an Mengen
+        ingredient_names = request.form.getlist('ingredient_name[]')
+        ingredient_qtys = request.form.getlist('ingredient_qty[]')
+
+        # Für jedes Eintragspaar (Name, Menge) ...
+        for name, qty in zip(ingredient_names, ingredient_qtys):
+            # Falls Name leer, überspringen
+            if not name.strip():
+                continue
+
+            # Ingredient schon vorhanden?
+            ingredient = Ingredient.query.filter_by(name=name.strip()).first()
+            if not ingredient:
+                ingredient = Ingredient(name=name.strip())
+                db.session.add(ingredient)
+                db.session.commit()
+
+            # Brückentabelle-Eintrag anlegen
+            recipe_ing = RecipeIngredient(
+                recipe_id=new_recipe.id,
+                ingredient_id=ingredient.id,
+                quantity=qty.strip() if qty else None
+            )
+            db.session.add(recipe_ing)
+
+        db.session.commit()
+        flash("Rezept erstellt!", "success")
         return redirect(url_for('my_recipes'))
 
-    # GET-Anfrage: Formular anzeigen
+    # GET
     return render_template('create_recipe.html')
 
 @app.route('/edit-recipe/<int:recipe_id>', methods=['GET', 'POST'])
 @login_required
 def edit_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
-
-    # Sicherheit: nur der Besitzer darf bearbeiten
+    
+    # Check Ownership: Nur der Besitzer darf das Rezept bearbeiten
     if recipe.user_id != current_user.id:
         flash("Du darfst nur deine eigenen Rezepte bearbeiten!", "error")
         return redirect(url_for('my_recipes'))
 
     if request.method == 'POST':
-        recipe.title = request.form.get('title') or recipe.title
-        recipe.instructions = request.form.get('instructions') or recipe.instructions
-        recipe.quantity = request.form.get('quantity') or recipe.quantity
-        
-        ingredient_name = request.form.get('ingredient_name')
-        if ingredient_name:
-            ingredient = Ingredient.query.filter_by(name=ingredient_name).first()
+        # 1) Basis-Rezeptdaten
+        recipe.title = request.form.get('title')
+        recipe.instructions = request.form.get('instructions')
+
+        # 2) Zutaten-Eingaben auslesen
+        ingredient_names = request.form.getlist('ingredient_name[]')
+        ingredient_qtys = request.form.getlist('ingredient_qty[]')
+
+        # 3) Bisherige RecipeIngredient-Einträge löschen (für einen "frischen" Stand)
+        #    Alternativ könntest du sie intelligent abgleichen, aber "Neu anlegen" ist meist simpler
+        #    dank cascade='all, delete-orphan' werden sie aus der DB entfernt,
+        #    sobald sie nicht mehr in recipe.recipe_ingredients enthalten sind.
+        recipe.recipe_ingredients.clear()
+        db.session.flush()  # löscht alle alten Datensätze in recipe_ingredients
+
+        # 4) Neue RecipeIngredient-Einträge anlegen
+        for name, qty in zip(ingredient_names, ingredient_qtys):
+            name = name.strip()
+            qty = qty.strip() if qty else ""
+            if not name:
+                continue
+
+            # Ingredient holen oder erstellen
+            ingredient = Ingredient.query.filter_by(name=name).first()
             if not ingredient:
-                ingredient = Ingredient(name=ingredient_name)
+                ingredient = Ingredient(name=name)
                 db.session.add(ingredient)
                 db.session.commit()
-            recipe.ingredient_id = ingredient.id
 
+            # neuen Eintrag in recipe_ingredients
+            ri = RecipeIngredient(
+                recipe=recipe,
+                ingredient=ingredient,
+                quantity=qty
+            )
+            db.session.add(ri)
+
+        # 5) Speichern
         db.session.commit()
-        flash("Rezept erfolgreich aktualisiert!", "success")
+        flash("Rezept wurde aktualisiert!", "success")
         return redirect(url_for('my_recipes'))
 
     # GET: Formular anzeigen
@@ -262,6 +307,62 @@ def my_recipes():
     return render_template('my_recipes.html', recipes=recipes)
 
 
+
+
+@app.route('/shopping-list')
+@login_required
+def shopping_list():
+    recipe_ids_str = request.args.get('recipe_ids', '')
+    if not recipe_ids_str:
+        flash("Keine Rezepte ausgewählt!", "error")
+        return redirect(url_for('my_recipes'))
+
+    # Aus "1,3,5" => [1, 3, 5]
+    recipe_ids = [int(x) for x in recipe_ids_str.split(',') if x.isdigit()]
+
+    # 1) Hole alle RecipeIngredient-Einträge
+    recipe_ings = RecipeIngredient.query.filter(
+        RecipeIngredient.recipe_id.in_(recipe_ids)
+    ).all()
+
+    # 2) Gruppieren nach ingredient_id => pro Ingredient gesammelte Mengen
+    from collections import defaultdict
+    shopping_dict = defaultdict(list)  
+    # key = ingredient_id, value = Liste von Mengen-Strings
+
+    for ri in recipe_ings:
+        shopping_dict[ri.ingredient_id].append(ri.quantity or "")
+
+    # 3) Zusammenbauen einer Liste für das Template
+    results = []
+    for ing_id, qty_list in shopping_dict.items():
+        ingredient = Ingredient.query.get(ing_id)
+        combined_qty = " + ".join(qty_list)
+        results.append({
+            "ingredient_name": ingredient.name,
+            "total_quantity": combined_qty
+        })
+
+    return render_template("shopping_list.html", results=results)
+
+
+@app.route('/select_recipes', methods=['GET', 'POST'])
+@login_required
+def select_recipes():
+    if request.method == 'POST':
+        # Checkbox-Liste
+        recipe_ids = request.form.getlist('recipe_ids[]')
+        if not recipe_ids:
+            flash("Keine Rezepte ausgewählt!", "error")
+            return redirect(url_for('select_recipes'))
+
+        # Wir können direkt redirecten zu /shopping-list, z.B. per GET-Parameter
+        # oder die Logik direkt hier machen.
+        return redirect(url_for('shopping_list', recipe_ids=",".join(recipe_ids)))
+
+    # GET: Liste aller Rezepte des Users anzeigen
+    recipes = Recipe.query.filter_by(user_id=current_user.id).all()
+    return render_template('select_recipes.html', recipes=recipes)
 
 
 # --------------------------------

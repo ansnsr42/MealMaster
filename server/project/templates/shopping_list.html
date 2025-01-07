@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Einkaufsliste</h2>
+<ul>
+  {% for item in results %}
+    <li>{{ item.ingredient_name }}: {{ item.total_quantity }}</li>
+  {% endfor %}
+</ul>
+<a href="{{ url_for('select_recipes') }}">Zurück zur Rezeptauswahl</a>
+{% endblock %}

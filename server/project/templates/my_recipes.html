@@ -1,4 +1,10 @@
-<!-- my_recipes.html -->
+{% extends "base.html" %}
+
+{% block title %}
+Meine Rezepte
+{% endblock %}
+
+{% block content %}
 <h1>Meine Rezepte</h1>
 
 <ul>
@@ -17,3 +23,4 @@
 </ul>
 
 <a href="{{ url_for('create_recipe') }}">Neues Rezept anlegen</a>
+{% endblock %}

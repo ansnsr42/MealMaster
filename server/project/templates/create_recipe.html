@@ -1,30 +1,39 @@
-{% extends "base.html" %}
-
-{% block title %}
-Rezept erstellen
-{% endblock %}
-
-{% block content %}
-
-
 <!-- create_recipe.html -->
-<form method="POST" action="/create-recipe">
-    <label for="title">Titel:</label>
-    <input type="text" name="title" id="title" required>
-    <br>
-  
-    <label for="ingredient_name">Zutat:</label>
-    <input type="text" name="ingredient_name" id="ingredient_name">
-    <br>
-  
-    <label for="quantity">Menge:</label>
-    <input type="text" name="quantity" id="quantity">
-    <br>
-  
-    <label for="instructions">Anleitung:</label>
-    <textarea name="instructions" id="instructions" rows="4" cols="50"></textarea>
-    <br>
-  
-    <button type="submit">Rezept speichern</button>
-  </form>
-  {% endblock %}
+{% extends "base.html" %}
+{% block content %}
+<h2>Neues Rezept anlegen</h2>
+
+<form method="POST" action="{{ url_for('create_recipe') }}">
+  <label for="title">Titel:</label>
+  <input type="text" name="title" id="title" required>
+
+  <label for="instructions">Anleitung:</label>
+  <textarea name="instructions" id="instructions" rows="4" cols="50"></textarea>
+
+  <!-- Dynamische Zutaten-Eingabe -->
+  <div id="ingredients-container">
+    <div class="ingredient-row">
+      <input type="text" name="ingredient_name[]" placeholder="Zutat">
+      <input type="text" name="ingredient_qty[]" placeholder="Menge z.B. 200 g">
+    </div>
+  </div>
+
+  <button type="button" onclick="addIngredientRow()">+ Weitere Zutat</button>
+  <br><br>
+
+  <button type="submit">Speichern</button>
+</form>
+
+<script>
+function addIngredientRow() {
+  const container = document.getElementById('ingredients-container');
+  const row = document.createElement('div');
+  row.className = 'ingredient-row';
+  row.innerHTML = `
+    <input type="text" name="ingredient_name[]" placeholder="Zutat">
+    <input type="text" name="ingredient_qty[]" placeholder="Menge">
+  `;
+  container.appendChild(row);
+}
+</script>
+{% endblock %}

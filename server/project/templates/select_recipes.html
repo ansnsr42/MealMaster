@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Rezepte auswählen für die Einkaufsliste</h2>
+<form method="POST">
+  <ul>
+    {% for recipe in recipes %}
+      <li>
+        <label>
+          <input type="checkbox" name="recipe_ids[]" value="{{ recipe.id }}">
+          {{ recipe.title }}
+        </label>
+      </li>
+    {% endfor %}
+  </ul>
+  <button type="submit">Einkaufsliste erstellen</button>
+</form>
+{% endblock %}
