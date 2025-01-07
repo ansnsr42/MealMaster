@@ -38,6 +38,7 @@ def load_user(user_id):
 # MODELS
 # --------------------------------
 class User(db.Model, UserMixin):
+    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), nullable=False, unique=True)
     password = db.Column(db.String(80), nullable=False)
@@ -46,9 +47,42 @@ class User(db.Model, UserMixin):
     register_date = db.Column(db.TEXT)
     last_login = db.Column(db.TEXT)
     ip_address = db.Column(db.TEXT)
+    # Beziehung zurück auf Recipes
+    recipes = db.relationship('Recipe', backref='user', lazy=True)
 
     def __repr__(self):
         return f"<User {self.username}>"
+
+class Ingredient(db.Model):
+    __tablename__ = 'ingredients'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+
+    # Beziehung zurück auf Recipes (optional)
+    recipes = db.relationship('Recipe', backref='ingredient', lazy=True)
+
+
+class Recipe(db.Model):
+    __tablename__ = 'recipes'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(30), nullable=False)
+    instructions = db.Column(db.String(400))
+    quantity = db.Column(db.String(50))  # z.B. "2 EL", "500 ml", etc.
+
+    # Schlüssel auf ingredient
+    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredients.id'))
+
+    # Schlüssel auf User (wer hat das Rezept angelegt)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    # Beziehungen:
+    # ingredient = relationship('Ingredient') -> bereits oben via backref='ingredient' erreichbar
+    # user = relationship('User') -> definieren wir bei User als backref
+
+
+
+
+# Legt Datenbank und Tabellen an        
 with app.app_context():
     db.create_all()
 # --------------------------------
@@ -152,11 +186,83 @@ def dashboard():
 @app.route('/create-recipe', methods=['GET', 'POST'])
 @login_required
 def create_recipe():
-    # Beispielroute, nur wenn eingeloggt
     if request.method == 'POST':
-        # Rezept erstellen ...
-        pass
+        title = request.form.get('title')
+        instructions = request.form.get('instructions')
+        quantity = request.form.get('quantity')
+        ingredient_name = request.form.get('ingredient_name')
+
+        # 1) Prüfen, ob eine Zutat angegeben wurde
+        if ingredient_name:
+            # nachschauen, ob diese Zutat schon existiert
+            ingredient = Ingredient.query.filter_by(name=ingredient_name).first()
+            if not ingredient:
+                # Neue Zutat anlegen
+                ingredient = Ingredient(name=ingredient_name)
+                db.session.add(ingredient)
+                db.session.commit()
+            ingredient_id = ingredient.id
+        else:
+            ingredient_id = None
+
+        # 2) Rezept anlegen
+        new_recipe = Recipe(
+            title=title,
+            instructions=instructions,
+            quantity=quantity,
+            ingredient_id=ingredient_id,
+            user_id=current_user.id  # wichtig: so gehört das Rezept dem eingeloggten User
+        )
+        db.session.add(new_recipe)
+        db.session.commit()
+
+        flash("Rezept erfolgreich erstellt!", "success")
+        return redirect(url_for('my_recipes'))
+
+    # GET-Anfrage: Formular anzeigen
     return render_template('create_recipe.html')
+
+@app.route('/edit-recipe/<int:recipe_id>', methods=['GET', 'POST'])
+@login_required
+def edit_recipe(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+
+    # Sicherheit: nur der Besitzer darf bearbeiten
+    if recipe.user_id != current_user.id:
+        flash("Du darfst nur deine eigenen Rezepte bearbeiten!", "error")
+        return redirect(url_for('my_recipes'))
+
+    if request.method == 'POST':
+        recipe.title = request.form.get('title') or recipe.title
+        recipe.instructions = request.form.get('instructions') or recipe.instructions
+        recipe.quantity = request.form.get('quantity') or recipe.quantity
+        
+        ingredient_name = request.form.get('ingredient_name')
+        if ingredient_name:
+            ingredient = Ingredient.query.filter_by(name=ingredient_name).first()
+            if not ingredient:
+                ingredient = Ingredient(name=ingredient_name)
+                db.session.add(ingredient)
+                db.session.commit()
+            recipe.ingredient_id = ingredient.id
+
+        db.session.commit()
+        flash("Rezept erfolgreich aktualisiert!", "success")
+        return redirect(url_for('my_recipes'))
+
+    # GET: Formular anzeigen
+    return render_template('edit_recipe.html', recipe=recipe)
+
+
+@app.route('/my-recipes')
+@login_required
+def my_recipes():
+    # Hol alle Rezepte für den aktuell eingeloggten User
+    recipes = Recipe.query.filter_by(user_id=current_user.id).all()
+    return render_template('my_recipes.html', recipes=recipes)
+
+
+
 
 # --------------------------------
 # MAIN

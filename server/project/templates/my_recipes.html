@@ -1,0 +1,19 @@
+<!-- my_recipes.html -->
+<h1>Meine Rezepte</h1>
+
+<ul>
+  {% for recipe in recipes %}
+    <li>
+      <strong>{{ recipe.title }}</strong>
+      {% if recipe.ingredient %}
+        - {{ recipe.ingredient.name }} (Menge: {{ recipe.quantity }})
+      {% endif %}
+      <br>
+      {{ recipe.instructions }}
+      <br>
+      <a href="{{ url_for('edit_recipe', recipe_id=recipe.id) }}">Bearbeiten</a>
+    </li>
+  {% endfor %}
+</ul>
+
+<a href="{{ url_for('create_recipe') }}">Neues Rezept anlegen</a>

@@ -1,0 +1,18 @@
+<!-- edit_recipe.html -->
+<h1>Rezept bearbeiten</h1>
+<form method="POST">
+  <label for="title">Titel:</label>
+  <input type="text" name="title" id="title" value="{{ recipe.title }}"><br>
+
+  <label for="ingredient_name">Zutat:</label>
+  <input type="text" name="ingredient_name" id="ingredient_name"
+         value="{{ recipe.ingredient.name if recipe.ingredient else '' }}"><br>
+
+  <label for="quantity">Menge:</label>
+  <input type="text" name="quantity" id="quantity" value="{{ recipe.quantity }}"><br>
+
+  <label for="instructions">Anleitung:</label>
+  <textarea name="instructions" id="instructions" rows="4" cols="50">{{ recipe.instructions }}</textarea><br>
+
+  <button type="submit">Speichern</button>
+</form>

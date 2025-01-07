@@ -1,55 +1,23 @@
-<!DOCTYPE html>
-<html lang="de">
+{% extends "base.html" %}
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MealMaster - Verwalte deine Ernährung</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-</head>
+{% block title %}
+Startseite - MealMaster
+{% endblock %}
 
-<body>
-  <header>
-    <div class="hero">
-      <h1>MealMaster</h1>
-      <p>Dein persönlicher Assistent für gesunde und einfache Ernährung.</p>
-      <a href="#features" class="cta-button">Jetzt starten</a>
-    </div>
-    <div class="menu-icon" onclick="toggleMenu()">
-      &#9776; <!-- Hamburger Icon -->
-    </div>
-    <nav id="navbar" class="navbar">
-      <ul>
-        <li><a href="{{ url_for('create_recipe') }}">Rezepte erstellen und verwalten</a></li>
-        <li><a href="#shopping-list">Einkaufslisten generieren und anpassen</a></li>
-        <li><a href="#inventory">Lebensmittelbestand erfassen</a></li>
-      </ul>
-    </nav>
-  </header>
-
-  <main>
-    <section id="features" class="features-section">
-      <h2>Funktionen von MealMaster</h2>
-      <div class="feature">
-        <h3>Rezepte erstellen und verwalten</h3>
-        <p>Speichere deine Lieblingsrezepte und verwalte sie bequem an einem Ort.</p>
-      </div>
-      <div class="feature">
-        <h3>Einkaufslisten generieren und anpassen</h3>
-        <p>Wähle Rezepte aus, lass dir eine praktische Einkaufsliste erstellen und ergänze sie um Non-Food-Produkte.</p>
-      </div>
-      <div class="feature">
-        <h3>Lebensmittelbestände erfassen</h3>
-        <p>Behalte den Überblick über deine Vorräte und vermeide unnötige Einkäufe.</p>
-      </div>
-    </section>
-  </main>
-
-  <footer>
-    <p> 2024 MealMaster - Deine smarte Lösung für eine ausgewogene Ernährung</p>
-  </footer>
-
-  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-</body>
-
-</html>
+{% block content %}
+<section id="features" class="features-section">
+  <h2>Funktionen von MealMaster</h2>
+  <div class="feature">
+    <h3>Rezepte erstellen und verwalten</h3>
+    <p>Speichere deine Lieblingsrezepte und verwalte sie bequem an einem Ort.</p>
+  </div>
+  <div class="feature">
+    <h3>Einkaufslisten generieren und anpassen</h3>
+    <p>Wähle Rezepte aus, lass dir eine praktische Einkaufsliste erstellen und ergänze sie um Non-Food-Produkte.</p>
+  </div>
+  <div class="feature">
+    <h3>Lebensmittelbestände erfassen</h3>
+    <p>Behalte den Überblick über deine Vorräte und vermeide unnötige Einkäufe.</p>
+  </div>
+</section>
+{% endblock %}
