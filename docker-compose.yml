@@ -4,8 +4,8 @@ services:
     working_dir: /usr/src/app/project
     command: uwsgi --socket 0.0.0.0:5000 --enable-threads --protocol=http -w wsgi:app --logto /dev/stdout --workers 4 --threads 2
     volumes:
-      - ./database/:/usr/src/app/project/instance
-      - ./logs:/usr/src/app/project/logs
+      - ./database/:/usr/src/app/project/instance:z
+      - ./logs:/usr/src/app/project/logs:z
       #     - ./config:/usr/src/app/project/config
     ports:
       - 5000:5000
