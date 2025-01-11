@@ -1,26 +1,22 @@
 {% extends "base.html" %}
-
-{% block title %}
-Meine Rezepte
-{% endblock %}
-
 {% block content %}
-<h1>Meine Rezepte</h1>
+<h2>Meine Rezepte</h2>
 
 <ul>
   {% for recipe in recipes %}
     <li>
-      <strong>{{ recipe.title }}</strong>
-      {% if recipe.ingredient %}
-        - {{ recipe.ingredient.name }} (Menge: {{ recipe.quantity }})
-      {% endif %}
-      <br>
-      {{ recipe.instructions }}
-      <br>
-      <a href="{{ url_for('edit_recipe', recipe_id=recipe.id) }}">Bearbeiten</a>
+      <strong>{{ recipe.title }}</strong><br>
+      Anleitung: {{ recipe.instructions }}<br>
+
+      <em>Zutaten:</em>
+      <ul>
+        {% for ri in recipe.recipe_ingredients %}
+          <li>{{ ri.ingredient.name }} – {{ ri.quantity }}</li>
+        {% endfor %}
+      </ul>
+
+      <a href="{{ url_for('edit_recipe', recipe_id=recipe.id) }}">[Bearbeiten]</a>
     </li>
   {% endfor %}
 </ul>
-
-<a href="{{ url_for('create_recipe') }}">Neues Rezept anlegen</a>
 {% endblock %}
