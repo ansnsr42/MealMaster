@@ -91,6 +91,13 @@ class RecipeIngredient(db.Model):
     recipe = db.relationship('Recipe', back_populates='recipe_ingredients')
     ingredient = db.relationship('Ingredient', back_populates='ingredient_in_recipes')
 
+
+    amount = db.Column(db.Float, nullable=True)  # oder db.Numeric(10, 2) für exakte Werte
+    unit = db.Column(db.String(20), nullable=True)  # z. B. "g", "ml", "Stk"
+
+    recipe = db.relationship('Recipe', back_populates='recipe_ingredients')
+    ingredient = db.relationship('Ingredient', back_populates='ingredient_in_recipes')
+
 class ShoppingList(db.Model):
     __tablename__ = 'shopping_lists'
     id = db.Column(db.Integer, primary_key=True)
@@ -113,11 +120,12 @@ class ShoppingListItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     shopping_list_id = db.Column(db.Integer, db.ForeignKey('shopping_lists.id'), nullable=False)
     ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredients.id'), nullable=False)
-    quantity = db.Column(db.String(50))
+
+    amount = db.Column(db.Float, nullable=True)
+    unit = db.Column(db.String(20), nullable=True)
 
     shopping_list = db.relationship('ShoppingList', back_populates='items')
-    ingredient = db.relationship('Ingredient')  # optional back_populates
-
+    ingredient = db.relationship('Ingredient')
 
 # Legt Datenbank und Tabellen an        
 with app.app_context():
@@ -240,28 +248,33 @@ def create_recipe():
         # z.B. ingredient_name[] => Liste an Strings
         #     ingredient_qty[] => Liste an Mengen
         ingredient_names = request.form.getlist('ingredient_name[]')
-        ingredient_qtys = request.form.getlist('ingredient_qty[]')
-
-        # Für jedes Eintragspaar (Name, Menge) ...
-        for name, qty in zip(ingredient_names, ingredient_qtys):
-            # Falls Name leer, überspringen
+        ingredient_amounts = request.form.getlist('ingredient_amount[]')
+        ingredient_units = request.form.getlist('ingredient_unit[]')
+        
+        for name, amt_str, unt in zip(ingredient_names, ingredient_amounts, ingredient_units):
             if not name.strip():
                 continue
-
-            # Ingredient schon vorhanden?
+            # Ingredient
             ingredient = Ingredient.query.filter_by(name=name.strip()).first()
             if not ingredient:
                 ingredient = Ingredient(name=name.strip())
                 db.session.add(ingredient)
                 db.session.commit()
-
-            # Brückentabelle-Eintrag anlegen
+        
+            # amount parsen
+            try:
+                amount_val = float(amt_str) if amt_str else None
+            except ValueError:
+                amount_val = None
+        
             recipe_ing = RecipeIngredient(
                 recipe_id=new_recipe.id,
                 ingredient_id=ingredient.id,
-                quantity=qty.strip() if qty else None
+                amount=amount_val,
+                unit=unt.strip() if unt else None
             )
             db.session.add(recipe_ing)
+
 
         db.session.commit()
         flash("Rezept erstellt!", "success")
@@ -274,51 +287,54 @@ def create_recipe():
 @login_required
 def edit_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
-    
-    # Check Ownership: Nur der Besitzer darf das Rezept bearbeiten
+
+    # Nur Besitzer darf bearbeiten
     if recipe.user_id != current_user.id:
         flash("Du darfst nur deine eigenen Rezepte bearbeiten!", "error")
         return redirect(url_for('my_recipes'))
 
     if request.method == 'POST':
-        # 1) Basis-Rezeptdaten
+        # 1) Rezeptdaten aktualisieren
         recipe.title = request.form.get('title')
         recipe.instructions = request.form.get('instructions')
 
-        # 2) Zutaten-Eingaben auslesen
-        ingredient_names = request.form.getlist('ingredient_name[]')
-        ingredient_qtys = request.form.getlist('ingredient_qty[]')
-
-        # 3) Bisherige RecipeIngredient-Einträge löschen (für einen "frischen" Stand)
-        #    Alternativ könntest du sie intelligent abgleichen, aber "Neu anlegen" ist meist simpler
-        #    dank cascade='all, delete-orphan' werden sie aus der DB entfernt,
-        #    sobald sie nicht mehr in recipe.recipe_ingredients enthalten sind.
+        # 2) Bisherige RecipeIngredients entfernen,
+        #    damit wir sie komplett neu anlegen können
         recipe.recipe_ingredients.clear()
-        db.session.flush()  # löscht alle alten Datensätze in recipe_ingredients
+        db.session.flush()  # entfernt alte Einträge aus der DB-Session
 
-        # 4) Neue RecipeIngredient-Einträge anlegen
-        for name, qty in zip(ingredient_names, ingredient_qtys):
+        # 3) Neue Werte aus dem Formular einlesen
+        ingredient_names = request.form.getlist('ingredient_name[]')
+        ingredient_amounts = request.form.getlist('ingredient_amount[]')
+        ingredient_units = request.form.getlist('ingredient_unit[]')
+
+        for name, amt_str, unt in zip(ingredient_names, ingredient_amounts, ingredient_units):
             name = name.strip()
-            qty = qty.strip() if qty else ""
             if not name:
                 continue
 
-            # Ingredient holen oder erstellen
+            # Ingredient holen oder anlegen
             ingredient = Ingredient.query.filter_by(name=name).first()
             if not ingredient:
                 ingredient = Ingredient(name=name)
                 db.session.add(ingredient)
                 db.session.commit()
 
-            # neuen Eintrag in recipe_ingredients
+            # Menge parsen
+            try:
+                amount_val = float(amt_str) if amt_str else None
+            except ValueError:
+                amount_val = None
+
+            # RecipeIngredient erstellen
             ri = RecipeIngredient(
                 recipe=recipe,
                 ingredient=ingredient,
-                quantity=qty
+                amount=amount_val,
+                unit=unt.strip() if unt else None
             )
             db.session.add(ri)
 
-        # 5) Speichern
         db.session.commit()
         flash("Rezept wurde aktualisiert!", "success")
         return redirect(url_for('my_recipes'))
@@ -335,6 +351,22 @@ def my_recipes():
     return render_template('my_recipes.html', recipes=recipes)
 
 
+@app.route('/delete-recipe/<int:recipe_id>', methods=['POST'])
+@login_required
+def delete_recipe(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+
+    # Nur der Eigentümer darf löschen
+    if recipe.user_id != current_user.id:
+        flash("Du darfst nur deine eigenen Rezepte löschen!", "error")
+        return redirect(url_for('my_recipes'))
+
+    # Rezept löschen
+    db.session.delete(recipe)
+    db.session.commit()
+
+    flash("Rezept wurde erfolgreich gelöscht!", "success")
+    return redirect(url_for('my_recipes'))
 
 
 @app.route('/shopping-list')
@@ -347,49 +379,70 @@ def shopping_list():
 
     return render_template('shopping_list.html', slist=slist)
 
-
 @app.route('/select_recipes', methods=['GET', 'POST'])
 @login_required
 def select_recipes():
     if request.method == 'POST':
         # Checkbox-Liste
         recipe_ids = request.form.getlist('recipe_ids[]')
-
-        # (1) Alte Liste löschen, falls vorhanden
+                # Alte Liste löschen
         existing_list = ShoppingList.query.filter_by(user_id=current_user.id).first()
         if existing_list:
             db.session.delete(existing_list)
             db.session.commit()
 
-        # (2) Neue Liste anlegen
+        # Neue Liste anlegen
         new_list = ShoppingList(user_id=current_user.id)
         db.session.add(new_list)
         db.session.commit()
 
-        # Alle Zutaten der gewählten Rezepte zusammensuchen
+        # Rezeptzutaten laden
         recipe_ids = [int(x) for x in recipe_ids if x.isdigit()]
-        recipe_ings = RecipeIngredient.query.filter(
-            RecipeIngredient.recipe_id.in_(recipe_ids)
-        ).all()
+        recipe_ings = RecipeIngredient.query.filter(RecipeIngredient.recipe_id.in_(recipe_ids)).all()
 
-        # Wir legen pro Ingredient-Eintrag ein ShoppingListItem an
-        # Falls wir Mengen nur als String übernehmen, wird's ein "append"
+        # 1) Summenbildung pro (ingredient_id, unit)
+        from collections import defaultdict
+        sums_dict = defaultdict(float)  # key=(ingredient_id, unit), value=amount
+
+        # Falls du Einträge hast ohne amount/unit, kannst du sie separat speichern
+        no_unit_entries = []
+
         for ri in recipe_ings:
+            if ri.amount is not None and ri.unit:
+                key = (ri.ingredient_id, ri.unit.lower())  # angleiche "g" vs "G" ...
+                sums_dict[key] += ri.amount
+            else:
+                # Falls blank oder gemischt
+                no_unit_entries.append(ri)
+
+        # 2) ShoppingListItems anlegen für summierte Einheiten
+        for (ing_id, unit_str), total_amt in sums_dict.items():
+            item = ShoppingListItem(
+                shopping_list_id=new_list.id,
+                ingredient_id=ing_id,
+                amount=total_amt,
+                unit=unit_str
+            )
+            db.session.add(item)
+
+        # 3) Für die ohne Einheit oder ohne amount -> einzeln anlegen
+        for ri in no_unit_entries:
             item = ShoppingListItem(
                 shopping_list_id=new_list.id,
                 ingredient_id=ri.ingredient_id,
-                quantity=ri.quantity  # z.B. "200 g"
+                amount=ri.amount,  # evtl. None
+                unit=ri.unit       # evtl. None
             )
             db.session.add(item)
 
         db.session.commit()
-        flash("Einkaufsliste wurde gespeichert!", "success")
-
+        flash("Deine Einkaufsliste wurde aktualisiert und Mengen summiert!", "success")
         return redirect(url_for('shopping_list'))
 
-    # GET: Liste aller Rezepte des Users anzeigen
-    recipes = Recipe.query.filter_by(user_id=current_user.id).all()
-    return render_template('select_recipes.html', recipes=recipes)        
+    # GET
+    user_recipes = Recipe.query.filter_by(user_id=current_user.id).all()
+    return render_template('select_recipes.html', recipes=user_recipes)
+
 
 
 @app.route('/delete-shopping-list', methods=['POST'])

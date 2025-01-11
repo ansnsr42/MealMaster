@@ -1,4 +1,3 @@
-<!-- create_recipe.html -->
 {% extends "base.html" %}
 {% block content %}
 <h2>Neues Rezept anlegen</h2>
@@ -10,11 +9,13 @@
   <label for="instructions">Anleitung:</label>
   <textarea name="instructions" id="instructions" rows="4" cols="50"></textarea>
 
-  <!-- Dynamische Zutaten-Eingabe -->
+  <!-- Container für alle Zutaten-Eingaben -->
   <div id="ingredients-container">
+    <!-- Erste Zutat -->
     <div class="ingredient-row">
       <input type="text" name="ingredient_name[]" placeholder="Zutat">
-      <input type="text" name="ingredient_qty[]" placeholder="Menge z.B. 200 g">
+      <input type="number" step="0.01" name="ingredient_amount[]" placeholder="Menge">
+      <input type="text" name="ingredient_unit[]" placeholder="Einheit (z.B. g, Stk)">
     </div>
   </div>
 
@@ -26,13 +27,22 @@
 
 <script>
 function addIngredientRow() {
+  // 1) Wir holen den Container
   const container = document.getElementById('ingredients-container');
+  
+  // 2) Neues <div> für die neue Zutaten-Zeile
   const row = document.createElement('div');
   row.className = 'ingredient-row';
+
+  // 3) Wir fügen drei Input-Felder ein (Name, Menge, Einheit),
+  //    genau wie in der ersten Zeile
   row.innerHTML = `
     <input type="text" name="ingredient_name[]" placeholder="Zutat">
-    <input type="text" name="ingredient_qty[]" placeholder="Menge">
+    <input type="number" step="0.01" name="ingredient_amount[]" placeholder="Menge">
+    <input type="text" name="ingredient_unit[]" placeholder="Einheit (z.B. g, Stk)">
   `;
+
+  // 4) Neue Zeile an den Container anhängen
   container.appendChild(row);
 }
 </script>
