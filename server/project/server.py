@@ -49,7 +49,9 @@ class User(db.Model, UserMixin):
     ip_address = db.Column(db.TEXT)
     # Beziehung zurück auf Recipes
     recipes = db.relationship('Recipe', back_populates='user')
-
+    shopping_list = db.relationship('ShoppingList', back_populates='user',
+                                    uselist=False,  # nur EIN Objekt
+                                    cascade='all, delete-orphan')
     def __repr__(self):
         return f"<User {self.username}>"
 
@@ -89,6 +91,32 @@ class RecipeIngredient(db.Model):
     recipe = db.relationship('Recipe', back_populates='recipe_ingredients')
     ingredient = db.relationship('Ingredient', back_populates='ingredient_in_recipes')
 
+class ShoppingList(db.Model):
+    __tablename__ = 'shopping_lists'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    #
+    
+
+    # Beziehung: Eine Einkaufsliste hat viele Items
+    items = db.relationship('ShoppingListItem', back_populates='shopping_list',
+                            cascade='all, delete-orphan')
+
+    # User-Objekt, falls du beidseitig referenzieren willst
+    user = db.relationship('User', back_populates='shopping_list')
+
+
+class ShoppingListItem(db.Model):
+    __tablename__ = 'shopping_list_items'
+    id = db.Column(db.Integer, primary_key=True)
+    shopping_list_id = db.Column(db.Integer, db.ForeignKey('shopping_lists.id'), nullable=False)
+    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredients.id'), nullable=False)
+    quantity = db.Column(db.String(50))
+
+    shopping_list = db.relationship('ShoppingList', back_populates='items')
+    ingredient = db.relationship('Ingredient')  # optional back_populates
 
 
 # Legt Datenbank und Tabellen an        
@@ -312,38 +340,12 @@ def my_recipes():
 @app.route('/shopping-list')
 @login_required
 def shopping_list():
-    recipe_ids_str = request.args.get('recipe_ids', '')
-    if not recipe_ids_str:
-        flash("Keine Rezepte ausgewählt!", "error")
-        return redirect(url_for('my_recipes'))
+    slist = ShoppingList.query.filter_by(user_id=current_user.id).first()
+    if not slist:
+        flash("Du hast aktuell keine Einkaufsliste. Bitte wähle Rezepte aus.")
+        return redirect(url_for('select_recipes'))
 
-    # Aus "1,3,5" => [1, 3, 5]
-    recipe_ids = [int(x) for x in recipe_ids_str.split(',') if x.isdigit()]
-
-    # 1) Hole alle RecipeIngredient-Einträge
-    recipe_ings = RecipeIngredient.query.filter(
-        RecipeIngredient.recipe_id.in_(recipe_ids)
-    ).all()
-
-    # 2) Gruppieren nach ingredient_id => pro Ingredient gesammelte Mengen
-    from collections import defaultdict
-    shopping_dict = defaultdict(list)  
-    # key = ingredient_id, value = Liste von Mengen-Strings
-
-    for ri in recipe_ings:
-        shopping_dict[ri.ingredient_id].append(ri.quantity or "")
-
-    # 3) Zusammenbauen einer Liste für das Template
-    results = []
-    for ing_id, qty_list in shopping_dict.items():
-        ingredient = Ingredient.query.get(ing_id)
-        combined_qty = " + ".join(qty_list)
-        results.append({
-            "ingredient_name": ingredient.name,
-            "total_quantity": combined_qty
-        })
-
-    return render_template("shopping_list.html", results=results)
+    return render_template('shopping_list.html', slist=slist)
 
 
 @app.route('/select_recipes', methods=['GET', 'POST'])
@@ -352,18 +354,55 @@ def select_recipes():
     if request.method == 'POST':
         # Checkbox-Liste
         recipe_ids = request.form.getlist('recipe_ids[]')
-        if not recipe_ids:
-            flash("Keine Rezepte ausgewählt!", "error")
-            return redirect(url_for('select_recipes'))
 
-        # Wir können direkt redirecten zu /shopping-list, z.B. per GET-Parameter
-        # oder die Logik direkt hier machen.
-        return redirect(url_for('shopping_list', recipe_ids=",".join(recipe_ids)))
+        # (1) Alte Liste löschen, falls vorhanden
+        existing_list = ShoppingList.query.filter_by(user_id=current_user.id).first()
+        if existing_list:
+            db.session.delete(existing_list)
+            db.session.commit()
+
+        # (2) Neue Liste anlegen
+        new_list = ShoppingList(user_id=current_user.id)
+        db.session.add(new_list)
+        db.session.commit()
+
+        # Alle Zutaten der gewählten Rezepte zusammensuchen
+        recipe_ids = [int(x) for x in recipe_ids if x.isdigit()]
+        recipe_ings = RecipeIngredient.query.filter(
+            RecipeIngredient.recipe_id.in_(recipe_ids)
+        ).all()
+
+        # Wir legen pro Ingredient-Eintrag ein ShoppingListItem an
+        # Falls wir Mengen nur als String übernehmen, wird's ein "append"
+        for ri in recipe_ings:
+            item = ShoppingListItem(
+                shopping_list_id=new_list.id,
+                ingredient_id=ri.ingredient_id,
+                quantity=ri.quantity  # z.B. "200 g"
+            )
+            db.session.add(item)
+
+        db.session.commit()
+        flash("Einkaufsliste wurde gespeichert!", "success")
+
+        return redirect(url_for('shopping_list'))
 
     # GET: Liste aller Rezepte des Users anzeigen
     recipes = Recipe.query.filter_by(user_id=current_user.id).all()
-    return render_template('select_recipes.html', recipes=recipes)
+    return render_template('select_recipes.html', recipes=recipes)        
 
+
+@app.route('/delete-shopping-list', methods=['POST'])
+@login_required
+def delete_shopping_list():
+    slist = ShoppingList.query.filter_by(user_id=current_user.id).first()
+    if slist:
+        db.session.delete(slist)
+        db.session.commit()
+        flash("Einkaufsliste gelöscht!", "info")
+    else:
+        flash("Keine Einkaufsliste vorhanden.", "error")
+    return redirect(url_for('select_recipes'))
 
 # --------------------------------
 # MAIN

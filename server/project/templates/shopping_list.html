@@ -1,10 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Einkaufsliste</h2>
+<h2>Aktuelle Einkaufsliste (erstellt am {{ slist.created_at }})</h2>
 <ul>
-  {% for item in results %}
-    <li>{{ item.ingredient_name }}: {{ item.total_quantity }}</li>
+  {% for item in slist.items %}
+    <li>{{ item.ingredient.name }}: {{ item.quantity }}</li>
   {% endfor %}
 </ul>
-<a href="{{ url_for('select_recipes') }}">Zurück zur Rezeptauswahl</a>
+
+<form method="POST" action="{{ url_for('delete_shopping_list') }}">
+  <button type="submit">Einkaufsliste löschen</button>
+</form>
+<a href="{{ url_for('select_recipes') }}">Weitere Rezepte auswählen</a>
 {% endblock %}
