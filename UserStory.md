@@ -13,17 +13,17 @@ Zur Ziel gruppe gehören vollem Sportler die ihre Ernährung beachten und diese 
 
 ## User Stories für die MealMaster-App
 
-1. **Als angemeldeter Benutzer möchte ich neue Rezepte anlegen können, damit ich meine Ernährung individuell gestalten kann.**
+1. **Als angemeldeter Benutzer möchte ich neue Rezepte anlegen können, damit ich meine Ernährung individuell gestalten kann.(Done)**
    - Akzeptanzkriterien:
      - Der Benutzer kann Titel, Zutaten und Zubereitungsschritte für ein neues Rezept eingeben.
      - Das Rezept wird in einer übersichtlichen Liste angezeigt.
 
-2. **Als Benutzer möchte, ich meine angelegten Rezepte verwalten können, damit ich sie bei Bedarf bearbeiten oder löschen kann.**
+2. **Als Benutzer möchte, ich meine angelegten Rezepte verwalten können, damit ich sie bei Bedarf bearbeiten oder löschen kann.(Done)**
    - Akzeptanzkriterien:
      - Der Benutzer kann Rezepte auswählen, um sie zu bearbeiten oder zu löschen.
      - Änderungen werden gespeichert und in der Rezeptliste aktualisiert.
 
-3. **Als Benutzer möchte ich eine Einkaufsliste aus meinen Rezepten generieren können, damit ich alle benötigten Zutaten auf einen Blick habe.**
+3. **Als Benutzer möchte ich eine Einkaufsliste aus meinen Rezepten generieren können, damit ich alle benötigten Zutaten auf einen Blick habe.(Done)**
    - Akzeptanzkriterien:
      - Der Benutzer kann eine Auswahl von Rezepten treffen, um die Einkaufsliste zu erstellen.
      - Die Einkaufsliste enthält alle Zutaten der ausgewählten Rezepte.
