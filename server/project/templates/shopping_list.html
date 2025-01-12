@@ -1,17 +1,44 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Aktuelle Einkaufsliste (erstellt am {{ slist.created_at }})</h2>
-<ul>
-  {% for item in slist.items %}
-    {% if item.amount %}
-      <li>{{ item.ingredient.name }}: {{ item.amount }} {{ item.unit or "" }}</li>
-    {% else %}
-      <li>{{ item.ingredient.name }} (keine Menge angegeben)</li>
-    {% endif %}
-  {% endfor %}
-</ul>
-<form method="POST" action="{{ url_for('delete_shopping_list') }}">
-  <button type="submit">Einkaufsliste löschen</button>
-</form>
-<a href="{{ url_for('select_recipes') }}">Neue Liste anlegen</a>
+<h2>Meine Einkaufsliste</h2>
+
+<!-- Button zum Bearbeiten der Einkaufsliste -->
+<p>
+  <a href="{{ url_for('edit_shopping_list') }}" class="btn btn-secondary">Einkaufsliste bearbeiten</a>
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Artikel</th>
+      <th>Menge</th>
+      <th>Einheit</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in slist.items %}
+    <tr>
+      <td>
+        {% if item.ingredient %}
+          {{ item.ingredient.name }}
+        {% elif item.custom_name %}
+          {{ item.custom_name }}
+        {% else %}
+          Unbekannt
+        {% endif %}
+      </td>
+      <td>{{ item.amount if item.amount else '' }}</td>
+      <td>{{ item.unit if item.unit else '' }}</td>
+      <td>
+        {% if item.purchased %}
+          <span class="badge badge-success">Erledigt</span>
+        {% else %}
+          <span class="badge badge-warning">Offen</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
 {% endblock %}

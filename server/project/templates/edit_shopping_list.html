@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Einkaufsliste bearbeiten</h2>
+
+<form method="POST" action="{{ url_for('edit_shopping_list') }}">
+  <table>
+    <thead>
+      <tr>
+        <th>Artikel</th>
+        <th>Menge</th>
+        <th>Einheit</th>
+        <th>Erledigt</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in slist.items %}
+      <tr>
+        <td>
+          <!-- Wenn Ingredient verknüpft ist, nimm item.ingredient.name -->
+          <!-- Sonst custom_name -->
+          {% if item.ingredient_id %}
+            {{ item.ingredient.name }}
+          {% elif item.custom_name %}
+            {{ item.custom_name }}
+          {% else %}
+            Unbekannt
+          {% endif %}
+        </td>
+        <td>{{ item.amount if item.amount else '' }}</td>
+        <td>{{ item.unit if item.unit else '' }}</td>
+        <td>
+          <input type="checkbox" name="purchased_{{ item.id }}"
+                 {% if item.purchased %}checked{% endif %}>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- Neue Artikel hinzufügen (Non-Food / Extra Sachen) -->
+  <h4>Neuen Artikel hinzufügen</h4>
+  <p>
+    <input type="text" name="new_item_name" placeholder="Artikelname" style="width: 200px;">
+    <input type="number" step="0.01" name="new_item_amount" placeholder="Menge">
+    <input type="text" name="new_item_unit" placeholder="Einheit (z.B. Stück, ml)">
+  </p>
+
+  <button type="submit">Änderungen speichern</button>
+</form>
+{% endblock %}

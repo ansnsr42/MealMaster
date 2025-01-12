@@ -130,6 +130,16 @@ class ShoppingListItem(db.Model):
     shopping_list = db.relationship('ShoppingList', back_populates='items')
     ingredient = db.relationship('Ingredient')
 
+    # Neu für Non-Food:
+    custom_name = db.Column(db.String(100), nullable=True)  # z. B. "Toilettenpapier"
+
+    # Neu für Abhaken:
+    purchased = db.Column(db.Boolean, default=False, nullable=False)
+
+    shopping_list = db.relationship('ShoppingList', back_populates='items')
+   
+
+
 class HouseholdItem(db.Model):
     __tablename__ = 'household_items'
     id = db.Column(db.Integer, primary_key=True)
@@ -465,6 +475,51 @@ def select_recipes():
     # GET
     user_recipes = Recipe.query.filter_by(user_id=current_user.id).all()
     return render_template('select_recipes.html', recipes=user_recipes)
+
+@app.route('/edit-shopping-list', methods=['GET', 'POST'])
+@login_required
+def edit_shopping_list():
+    # 1) Aktuelle Liste des Users laden
+    slist = ShoppingList.query.filter_by(user_id=current_user.id).first()
+    if not slist:
+        flash("Keine Einkaufsliste vorhanden.")
+        return redirect(url_for('select_recipes'))  # oder wo auch immer
+
+    if request.method == 'POST':
+        # 2) Checkboxen für bestehende Items auswerten
+        for item in slist.items:
+            # Wir erwarten z.B. ein Feld "purchased_<ID>" 
+            # -> wenn es im request.form auftaucht, ist es angehakt
+            checkbox_name = f"purchased_{item.id}"
+            item.purchased = (checkbox_name in request.form)
+
+        # 3) Neuen Artikel hinzufügen
+        custom_name = request.form.get('new_item_name', '').strip()
+        amount_str = request.form.get('new_item_amount', '')
+        unit_str = request.form.get('new_item_unit', '').strip()
+
+        if custom_name:
+            try:
+                amount_val = float(amount_str) if amount_str else None
+            except ValueError:
+                amount_val = None
+
+            new_item = ShoppingListItem(
+                shopping_list_id=slist.id,
+                custom_name=custom_name,
+                amount=amount_val,
+                unit=unit_str or None,
+                purchased=False  # neu angelegte Artikel sind standardmäßig nicht gekauft
+            )
+            db.session.add(new_item)
+
+        db.session.commit()
+        flash("Einkaufsliste aktualisiert!", "success")
+        return redirect(url_for('edit_shopping_list'))
+
+    # GET => Seite anzeigen
+    return render_template('edit_shopping_list.html', slist=slist)
+
 
 
 @app.route('/delete-shopping-list', methods=['POST'])

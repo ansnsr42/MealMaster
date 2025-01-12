@@ -28,12 +28,12 @@ Zur Ziel gruppe gehören vollem Sportler die ihre Ernährung beachten und diese 
      - Der Benutzer kann eine Auswahl von Rezepten treffen, um die Einkaufsliste zu erstellen.
      - Die Einkaufsliste enthält alle Zutaten der ausgewählten Rezepte.
 
-4. **Als Benutzer möchte ich meinen Bestand an Lebensmitteln erfassen können, damit ich weiß, welche Zutaten ich bereits zu Hause habe.**
+4. **Als Benutzer möchte ich meinen Bestand an Lebensmitteln erfassen können, damit ich weiß, welche Zutaten ich bereits zu Hause habe.(done)**
    - Akzeptanzkriterien:
      - Der Benutzer kann Lebensmittel und deren Mengen in seinem Bestand hinzufügen.
      - Der Bestand wird in einer übersichtlichen Liste angezeigt.
 
-5. **Als Benutzer möchte ich, dass die App prüft, welche Zutaten bereits in meinem Haushalt vorhanden sind, um diese nicht auf die Einkaufsliste zu setzen.**
+5. **Als Benutzer möchte ich, dass die App prüft, welche Zutaten bereits in meinem Haushalt vorhanden sind, um diese nicht auf die Einkaufsliste zu setzen.(Done)**
    - Akzeptanzkriterien:
      - Die App vergleicht die Zutaten der Einkaufsliste mit dem vorhandenen Bestand.
      - Zutaten, die bereits vorhanden sind, werden von der Einkaufsliste ausgeschlossen.

@@ -39,6 +39,7 @@
       <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
       <li><a href="{{ url_for('my_recipes') }}">Meine Rezepte</a></li>
       <li><a href="{{ url_for('shopping_list') }}">Einkaufsliste</a></li>
+      <li><a href="{{ url_for('edit_shopping_list') }}">Einkaufsliste bearbeiten</a></li>
       <li><a href="{{ url_for('inventory') }}">Bestand</a></li>
     </ul>
   </div>
@@ -50,10 +51,10 @@
   </main>
 
   <footer>
-    <p>&copy; 2025 MealMaster</p>
+    <p>2025 MealMaster</p>
   </footer>
 
-  <!-- Skript (Nicht verschachteln!) -->
+
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
