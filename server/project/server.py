@@ -52,6 +52,9 @@ class User(db.Model, UserMixin):
     shopping_list = db.relationship('ShoppingList', back_populates='user',
                                     uselist=False,  # nur EIN Objekt
                                     cascade='all, delete-orphan')
+
+    household_items = db.relationship('HouseholdItem', back_populates='user',
+                                      cascade='all, delete-orphan')
     def __repr__(self):
         return f"<User {self.username}>"
 
@@ -126,6 +129,19 @@ class ShoppingListItem(db.Model):
 
     shopping_list = db.relationship('ShoppingList', back_populates='items')
     ingredient = db.relationship('Ingredient')
+
+class HouseholdItem(db.Model):
+    __tablename__ = 'household_items'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredients.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=True)
+    unit = db.Column(db.String(20), nullable=True)
+
+    user = db.relationship('User', back_populates='household_items')
+    ingredient = db.relationship('Ingredient')
+
+
 
 # Legt Datenbank und Tabellen an        
 with app.app_context():
@@ -383,39 +399,45 @@ def shopping_list():
 @login_required
 def select_recipes():
     if request.method == 'POST':
-        # Checkbox-Liste
         recipe_ids = request.form.getlist('recipe_ids[]')
-                # Alte Liste löschen
         existing_list = ShoppingList.query.filter_by(user_id=current_user.id).first()
         if existing_list:
             db.session.delete(existing_list)
             db.session.commit()
 
-        # Neue Liste anlegen
         new_list = ShoppingList(user_id=current_user.id)
         db.session.add(new_list)
         db.session.commit()
 
+        # Haushalt: Zutaten dieses Users
+        household_items = HouseholdItem.query.filter_by(user_id=current_user.id).all()
+        household_ingredient_ids = {hi.ingredient_id for hi in household_items}
+
         # Rezeptzutaten laden
         recipe_ids = [int(x) for x in recipe_ids if x.isdigit()]
-        recipe_ings = RecipeIngredient.query.filter(RecipeIngredient.recipe_id.in_(recipe_ids)).all()
+        recipe_ings = RecipeIngredient.query.filter(
+            RecipeIngredient.recipe_id.in_(recipe_ids)
+        ).all()
 
-        # 1) Summenbildung pro (ingredient_id, unit)
+        # Summendict
         from collections import defaultdict
-        sums_dict = defaultdict(float)  # key=(ingredient_id, unit), value=amount
-
-        # Falls du Einträge hast ohne amount/unit, kannst du sie separat speichern
+        sums_dict = defaultdict(float)
         no_unit_entries = []
 
         for ri in recipe_ings:
+            # Check if ingredient already in household
+            if ri.ingredient_id in household_ingredient_ids:
+                # => skip it entirely
+                continue
+
+            # Normal summation logic
             if ri.amount is not None and ri.unit:
-                key = (ri.ingredient_id, ri.unit.lower())  # angleiche "g" vs "G" ...
+                key = (ri.ingredient_id, ri.unit.lower())
                 sums_dict[key] += ri.amount
             else:
-                # Falls blank oder gemischt
                 no_unit_entries.append(ri)
 
-        # 2) ShoppingListItems anlegen für summierte Einheiten
+        # Summierte Einheiten -> ShoppingListItem
         for (ing_id, unit_str), total_amt in sums_dict.items():
             item = ShoppingListItem(
                 shopping_list_id=new_list.id,
@@ -425,24 +447,24 @@ def select_recipes():
             )
             db.session.add(item)
 
-        # 3) Für die ohne Einheit oder ohne amount -> einzeln anlegen
+        # no_unit_entries -> add if not in household
         for ri in no_unit_entries:
+            # household check war oben, also hier kein check mehr nötig
             item = ShoppingListItem(
                 shopping_list_id=new_list.id,
                 ingredient_id=ri.ingredient_id,
-                amount=ri.amount,  # evtl. None
-                unit=ri.unit       # evtl. None
+                amount=ri.amount,
+                unit=ri.unit
             )
             db.session.add(item)
 
         db.session.commit()
-        flash("Deine Einkaufsliste wurde aktualisiert und Mengen summiert!", "success")
+        flash("Deine Einkaufsliste wurde aktualisiert! Zutaten aus dem Haushalt wurden ignoriert.", "success")
         return redirect(url_for('shopping_list'))
 
     # GET
     user_recipes = Recipe.query.filter_by(user_id=current_user.id).all()
     return render_template('select_recipes.html', recipes=user_recipes)
-
 
 
 @app.route('/delete-shopping-list', methods=['POST'])
@@ -456,6 +478,50 @@ def delete_shopping_list():
     else:
         flash("Keine Einkaufsliste vorhanden.", "error")
     return redirect(url_for('select_recipes'))
+
+@app.route('/inventory')
+@login_required
+def inventory():
+    # Alle Items, die zum aktuellen Benutzer gehören
+    items = HouseholdItem.query.filter_by(user_id=current_user.id).all()
+    return render_template('inventory.html', items=items)
+
+@app.route('/add-inventory', methods=['POST'])
+@login_required
+def add_inventory():
+    ingredient_name = request.form.get('ingredient_name', '').strip()
+    amount_str = request.form.get('amount', '')
+    unit_str = request.form.get('unit', '').strip()
+
+    # Ingredient holen oder anlegen
+    if ingredient_name:
+        ingredient = Ingredient.query.filter_by(name=ingredient_name).first()
+        if not ingredient:
+            ingredient = Ingredient(name=ingredient_name)
+            db.session.add(ingredient)
+            db.session.commit()
+
+        # Menge parsen
+        try:
+            amount_val = float(amount_str) if amount_str else None
+        except ValueError:
+            amount_val = None
+
+        # HouseholdItem anlegen
+        item = HouseholdItem(
+            user_id=current_user.id,
+            ingredient_id=ingredient.id,
+            amount=amount_val,
+            unit=unit_str if unit_str else None
+        )
+        db.session.add(item)
+        db.session.commit()
+        flash("Lebensmittel zum Bestand hinzugefügt!", "success")
+    else:
+        flash("Bitte einen Namen für die Zutat angeben!", "error")
+
+    return redirect(url_for('inventory'))
+
 
 # --------------------------------
 # MAIN

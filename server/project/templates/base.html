@@ -3,53 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}MealMaster - Verwalte deine Ernährung{% endblock %}</title>
-  
+  <title>{% block title %}MealMaster{% endblock %}</title>
 
-  
-  <!-- Dein zentrales CSS -->
+  <!-- Dein Haupt-CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
-  <!-- HEADER mit Hero und Burger-Menü -->
   <header>
-    <div class="hero">
-      <h1>MealMaster</h1>
-      <p>Dein persönlicher Assistent für gesunde und einfache Ernährung.</p>
+    <!-- Obere Navbar -->
+    <nav class="navbar-top">
+      <!-- Burger-Icon (links) -->
+      <div class="menu-icon" onclick="toggleMenu()">
+        &#9776; <!-- Hamburger-Symbol -->
+      </div>
       
-    </div>
+      <!-- Haupttitel -->
+      <div class="nav-title">MealMaster</div>
 
-    <!-- Burger-Icon -->
-    <div class="menu-icon" onclick="toggleMenu()">
-      &#9776;  <!-- Das klassische Hamburger-Symbol -->
-    </div>
-
-    <!-- Navigation -->
-    <nav id="navbar" class="navbar">
-      <ul>
-        <!-- Beispiel-Links; passe sie nach Wunsch an -->
-        
-        <li><a href="{{ url_for('my_recipes') }}">Rezepte anzeigen</a></li>
-        <li><a href="{{ url_for('shopping_list') }}">Einkaufsliste</a></li>
-        <li><a href="#inventory">Bestände</a></li>
-        <!-- Du könntest hier z. B. noch Logout oder Dashboard verlinken -->
-      </ul>
+      <!-- Logout-Button (rechts) -->
+      <div class="nav-logout">
+        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+      </div>
     </nav>
+
+    <!-- Hero oder Intro -->
+    <section class="hero">
+      <h1>MealMaster</h1>
+      <p>Dein persönlicher Assistent für eine einfache und gesunde Ernährung.</p>
+    </section>
   </header>
 
-  <!-- Haupt-Bereich, der pro Seite unterschiedlich gefüllt wird -->
+  <!-- Seitliches Burger-Menü (ausklappbar) -->
+  <div id="sidebar" class="sidebar">
+    <ul>
+      <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+      <li><a href="{{ url_for('my_recipes') }}">Meine Rezepte</a></li>
+      <li><a href="{{ url_for('shopping_list') }}">Einkaufsliste</a></li>
+      <li><a href="{{ url_for('inventory') }}">Bestand</a></li>
+    </ul>
+  </div>
+
+  <!-- Hauptbereich (Kind-Templates) -->
   <main>
     {% block content %}
-    <!-- Kind-Templates überschreiben diesen Bereich -->
     {% endblock %}
   </main>
 
-  <!-- FOOTER -->
   <footer>
-    <p>2024 MealMaster - Deine smarte Lösung für eine ausgewogene Ernährung</p>
+    <p>&copy; 2025 MealMaster</p>
   </footer>
 
-  <!-- Dein JS -->
+  <!-- Skript (Nicht verschachteln!) -->
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

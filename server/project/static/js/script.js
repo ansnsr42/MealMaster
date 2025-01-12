@@ -1,9 +1,6 @@
 function toggleMenu() {
-    const navbar = document.getElementById("navbar");
-    if (navbar.style.display === "block") {
-        navbar.style.display = "none";
-    } else {
-        navbar.style.display = "block";
-    }
-}
-
+    const sidebar = document.getElementById("sidebar");
+    // Toggle die Klasse 'active'
+    sidebar.classList.toggle("active");
+  }
+  

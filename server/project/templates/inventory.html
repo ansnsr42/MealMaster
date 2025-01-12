@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Mein Bestand</h2>
+
+<!-- Formular zum Hinzufügen einer neuen Zutat im Haushalt -->
+<form method="POST" action="{{ url_for('add_inventory') }}">
+  <input type="text" name="ingredient_name" placeholder="Lebensmittel" required>
+  <input type="number" step="0.01" name="amount" placeholder="Menge">
+  <input type="text" name="unit" placeholder="Einheit (z.B. g, Stk)">
+  <button type="submit">Hinzufügen</button>
+</form>
+
+<hr>
+
+<!-- Auflistung des Bestands -->
+<table>
+  <thead>
+    <tr>
+      <th>Lebensmittel</th>
+      <th>Menge</th>
+      <th>Einheit</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in items %}
+    <tr>
+      <td>{{ item.ingredient.name }}</td>
+      <td>{{ item.amount if item.amount else '' }}</td>
+      <td>{{ item.unit if item.unit else '' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
