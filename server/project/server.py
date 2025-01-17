@@ -122,7 +122,7 @@ class ShoppingListItem(db.Model):
     __tablename__ = 'shopping_list_items'
     id = db.Column(db.Integer, primary_key=True)
     shopping_list_id = db.Column(db.Integer, db.ForeignKey('shopping_lists.id'), nullable=False)
-    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredients.id'), nullable=False)
+    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredients.id'), nullable=True)
 
     amount = db.Column(db.Float, nullable=True)
     unit = db.Column(db.String(20), nullable=True)
