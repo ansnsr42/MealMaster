@@ -130,3 +130,8 @@ footer {
         display: block;
     }
 }
+
+.purchased {
+    text-decoration: line-through;
+    color: #888;
+}

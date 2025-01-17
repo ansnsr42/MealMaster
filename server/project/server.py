@@ -11,7 +11,7 @@ from flask_login import (
     LoginManager, UserMixin, login_user, logout_user,
     current_user, login_required
 )
-
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 
 manager = mealmaster_mgr.Mealmaster_mgr(config_file="config/settings.json")
@@ -33,7 +33,7 @@ login_manager.login_view = 'login'   # Route-Name deiner Login-Funktion
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
-
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 # --------------------------------
 # MODELS
 # --------------------------------
@@ -192,8 +192,7 @@ class LoginForm(FlaskForm):
 
 @app.route('/')
 def home():
-    # Mögliche Startseite: z.B. "login" oder "index"
-    return redirect(url_for('login'))
+        return render_template('index.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -395,15 +394,58 @@ def delete_recipe(recipe_id):
     return redirect(url_for('my_recipes'))
 
 
-@app.route('/shopping-list')
+@app.route('/shopping-list', methods=['GET', 'POST'])
 @login_required
 def shopping_list():
     slist = ShoppingList.query.filter_by(user_id=current_user.id).first()
+
+    # Falls es keine Einkaufsliste gibt -> zum Rezepte-Auswählen
     if not slist:
-        flash("Du hast aktuell keine Einkaufsliste. Bitte wähle Rezepte aus.")
+        flash("Du hast aktuell keine Einkaufsliste. Bitte wähle Rezepte aus.", "error")
         return redirect(url_for('select_recipes'))
 
+    if request.method == 'POST':
+        # Prüfen, ob "Liste löschen"-Button geklickt wurde
+        if 'delete_list' in request.form:
+            db.session.delete(slist)
+            db.session.commit()
+            flash("Einkaufsliste gelöscht!", "info")
+            return redirect(url_for('select_recipes'))
+
+        # 1) Gekaufte Artikel abhaken oder zurücksetzen
+        for item in slist.items:
+            checkbox_name = f"purchased_{item.id}"
+            item.purchased = (checkbox_name in request.form)
+
+        # 2) Neuen Artikel hinzufügen (falls angegeben)
+        new_name = request.form.get('new_item_name', '').strip()
+        new_amount_str = request.form.get('new_item_amount', '').strip()
+        new_unit_str = request.form.get('new_item_unit', '').strip()
+
+        if new_name:
+            # Für Non-Food / freie Artikel => ingredient_id=None
+            # oder du erlaubst dem User, eine Ingredient auszuwählen.
+            try:
+                new_amount = float(new_amount_str) if new_amount_str else None
+            except ValueError:
+                new_amount = None
+
+            new_item = ShoppingListItem(
+                shopping_list_id=slist.id,
+                custom_name=new_name,
+                amount=new_amount,
+                unit=new_unit_str or None,
+                purchased=False
+            )
+            db.session.add(new_item)
+
+        db.session.commit()
+        flash("Änderungen gespeichert!", "success")
+        return redirect(url_for('shopping_list'))
+
+    # GET: Liste anzeigen
     return render_template('shopping_list.html', slist=slist)
+
 
 @app.route('/select_recipes', methods=['GET', 'POST'])
 @login_required
@@ -582,7 +624,7 @@ def add_inventory():
 # MAIN
 # --------------------------------
 if __name__ == "__main__":
-    # Damit du den DB-Kontext hast:
+
   
-    # Nur für lokale Entwicklung
-    app.run(debug=True)
+
+    app.run(debug=False)

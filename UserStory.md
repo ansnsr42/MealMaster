@@ -38,7 +38,7 @@ Zur Ziel gruppe gehören vollem Sportler die ihre Ernährung beachten und diese 
      - Die App vergleicht die Zutaten der Einkaufsliste mit dem vorhandenen Bestand.
      - Zutaten, die bereits vorhanden sind, werden von der Einkaufsliste ausgeschlossen.
 
-6. **Als Benutzer möchte ich die Einkaufsliste anpassen können, um auch andere Artikel wie Non-Food-Produkte hinzuzufügen, damit ich alles für meinen Einkauf an einem Ort habe.**
+6. **Als Benutzer möchte ich die Einkaufsliste anpassen können, um auch andere Artikel wie Non-Food-Produkte hinzuzufügen, damit ich alles für meinen Einkauf an einem Ort habe.(done)**
    - Akzeptanzkriterien:
      - Der Benutzer kann zusätzliche Artikel zur Einkaufsliste hinzufügen.
      - Die angepasste Einkaufsliste wird gespeichert und kann während des Einkaufs abgerufen werden.
