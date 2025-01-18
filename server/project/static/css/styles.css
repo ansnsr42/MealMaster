@@ -135,3 +135,28 @@ footer {
     text-decoration: line-through;
     color: #888;
 }
+
+.features-section {
+    padding: 40px 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin: 0 20px;
+}
+
+.features-section h2 {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.feature {
+    margin: 20px 0;
+    padding: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    background-color: #fafafa;
+}
+
+.feature h3 {
+    color: #2c3e50;
+}
