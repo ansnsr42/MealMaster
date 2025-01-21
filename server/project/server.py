@@ -583,6 +583,25 @@ def inventory():
     items = HouseholdItem.query.filter_by(user_id=current_user.id).all()
     return render_template('inventory.html', items=items)
 
+@app.route('/delete-inventory/<int:item_id>', methods=['POST'])
+@login_required
+def delete_inventory(item_id):
+    # 1) Item aus der DB holen
+    item = HouseholdItem.query.get_or_404(item_id)
+    
+    # 2) Prüfen, ob das Item zum aktuellen User gehört
+    if item.user_id != current_user.id:
+        flash("Du darfst nur deine eigenen Bestands-Items löschen!", "error")
+        return redirect(url_for('inventory'))
+
+    # 3) Löschen
+    db.session.delete(item)
+    db.session.commit()
+    flash("Eintrag wurde aus dem Bestand gelöscht!", "info")
+
+    return redirect(url_for('inventory'))
+
+
 @app.route('/add-inventory', methods=['POST'])
 @login_required
 def add_inventory():

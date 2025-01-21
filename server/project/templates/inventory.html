@@ -19,6 +19,7 @@
       <th>Lebensmittel</th>
       <th>Menge</th>
       <th>Einheit</th>
+      <th>Aktion</th>
     </tr>
   </thead>
   <tbody>
@@ -27,6 +28,12 @@
       <td>{{ item.ingredient.name }}</td>
       <td>{{ item.amount if item.amount else '' }}</td>
       <td>{{ item.unit if item.unit else '' }}</td>
+      <td>
+        <!-- Formular zum Löschen (POST) -->
+        <form method="POST" action="{{ url_for('delete_inventory', item_id=item.id) }}">
+          <button type="submit" onclick="return confirm('Eintrag wirklich löschen?');">Löschen</button>
+        </form>
+      </td>
     </tr>
     {% endfor %}
   </tbody>
