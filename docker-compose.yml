@@ -9,6 +9,7 @@ services:
       #     - ./config:/usr/src/app/project/config
     ports:
       - 5000:5000
+    restart: always 
 
  # proxy:
  #   image: nginx:stable-alpine
