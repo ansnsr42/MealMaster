@@ -1,4 +1,4 @@
-FROM python:3.11.3-slim-buster
+FROM python:3.12.3-slim-bookworm
 
 WORKDIR /usr/src/app
 
@@ -7,7 +7,7 @@ ENV PYTHONUNBUFFERED=1
 
 RUN apt update && \
     apt upgrade -y && \
-    apt install -y build-essential python-dev nano procps
+    apt install -y build-essential nano procps
 
 RUN pip install --upgrade pip
 
