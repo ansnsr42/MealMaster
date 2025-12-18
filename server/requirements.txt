@@ -3,7 +3,7 @@ bcrypt==4.1.2
 Flask
 Flask-Session
 Flask-APScheduler==1.13.1
-Flask-CORS==4.0.0
+Flask-CORS==6.0.0
 Flask-Bcrypt
 Flask-Login==0.6.3
 Flask-SQLAlchemy==3.1.1
