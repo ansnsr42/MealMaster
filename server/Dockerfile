@@ -1,15 +1,16 @@
-FROM python:3.12.3-slim-bookworm
+FROM python:3.12.3-alpine3.20
 
 WORKDIR /usr/src/app
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-RUN apt update && \
-    apt upgrade -y && \
-    apt install -y build-essential nano procps
+RUN apk add --no-cache \
+      build-base \
+      linux-headers \
+      procps \
+    && pip install --upgrade pip
 
-RUN pip install --upgrade pip
 
 COPY . /usr/src/app/
 
